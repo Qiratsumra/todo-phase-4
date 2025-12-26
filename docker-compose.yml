@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Render PostgreSQL Database
+      - SQLALCHEMY_DATABASE_URL=postgresql://qiratsaeed:W5diFNGiIBj8L3ziFtZkaM19QLCuX0AM@dpg-d50f873e5dus73ddl1eg-a.oregon-postgres.render.com/todo_phase3_backend
+      # AI Configuration
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-AIzaSyBRV6Z_Pyo5T5dlkmuDdcNYUqmjkiysr5s}
+      # Server Configuration
+      - PORT=8000
+      - LOG_LEVEL=info
+      - BACKEND_CORS_ORIGINS=["http://localhost:3000"]
+      # API Configuration
+      - ENABLE_FALLBACK=true
+      - FALLBACK_MODE=smart
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_REQUESTS=5
+      - RATE_LIMIT_WINDOW=120
+      - MAX_TOKENS_PER_REQUEST=500
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://todo-phase-3-backend.onrender.com
+    ports:
+      - "3000:3000"
+    environment:
+      # Better Auth
+      - BETTER_AUTH_SECRET=gv1MpYLkbiYKZDKEeRYJoZgG1CDuo5Dm
+      - BETTER_AUTH_URL=http://localhost:3000
+      # Render PostgreSQL Database
+      - DATABASE_URL=postgresql://qiratsaeed:W5diFNGiIBj8L3ziFtZkaM19QLCuX0AM@dpg-d50f873e5dus73ddl1eg-a.oregon-postgres.render.com/todo_phase3_backend
+      - PGSSLMODE=require
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      # API Configuration - Connect to Render backend
+      - NEXT_PUBLIC_API_URL=https://todo-phase-3-backend.onrender.com
+      # OpenAI Domain Key
+      - NEXT_PUBLIC_OPENAI_DOMAIN_KEY=domain_pk_694104eaa09481969c6d28efd1de536704827a7214e55e06
+      # Environment
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
